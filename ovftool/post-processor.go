@@ -173,5 +173,5 @@ func (p *OVFtoolPostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifac
 	}
 	os.Remove( vmdir)
 
-	return &Artifact{ dir: p.cfg.OutputDir}, true, nil
+	return &Artifact{ dir: p.cfg.OutputDir}, false, nil
 }
