@@ -22,7 +22,7 @@ type Config struct {
 
 	Host     string `mapstructure:"host"`
 	SshPort  int    `mapstructure:"ssh_port"`
-	ViPort   int    `mapstructure:"vi_port"`
+	//ViPort   int    `mapstructure:"vi_port"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 	VMName   string `mapstructure:"vm_name"`
@@ -69,9 +69,9 @@ func (p *OVFtoolPostProcessor) Configure(raws ...interface{}) error {
 		p.cfg.SshPort = 22
 	}
 
-	if p.cfg.ViPort == 0 {
-		p.cfg.ViPort = 22
-	}
+	//if p.cfg.ViPort == 0 {
+	//	p.cfg.ViPort = 22
+	//}
 
 	if p.cfg.Username == "" {
 		p.cfg.Username = "root"
@@ -159,7 +159,8 @@ func (p *OVFtoolPostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifac
 	ui.Say( "Exporting VM...")
 
 	var stdout, stderr bytes.Buffer
-	source := fmt.Sprintf( "vi://%s:%s@%s:%d/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.ViPort, p.cfg.VMName)
+	//source := fmt.Sprintf( "vi://%s:%s@%s:%d/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.ViPort, p.cfg.VMName)
+	source := fmt.Sprintf( "vi://%s:%s@%s/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.VMName)
 
 	cmd := exec.Command( p.cfg.OVFtoolPath, "--noSSLVerify", source, p.cfg.OutputDir)
 	cmd.Stdout = &stdout
