@@ -159,13 +159,14 @@ func (p *OVFtoolPostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifac
 	ui.Say( "Exporting VM...")
 
 	var stdout, stderr bytes.Buffer
-	source := fmt.Sprintf( "vi://%s:%s@%s:%s/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.ViPort, p.cfg.VMName)
+	source := fmt.Sprintf( "vi://%s:%s@%s:%d/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.ViPort, p.cfg.VMName)
 
 	cmd := exec.Command( p.cfg.OVFtoolPath, "--noSSLVerify", source, p.cfg.OutputDir)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
+	  p.Unregister()
 		return nil, false, fmt.Errorf("Unable to execute ovftool:\n== STDOUT ==\n%s== STDERR ==\n%s", stdout.String(), stderr.String())
 	}
 
