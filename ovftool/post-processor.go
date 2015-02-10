@@ -21,7 +21,8 @@ type Config struct {
 	OutputDir   string `mapstructure:"output_dir"`
 
 	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
+	SshPort  int    `mapstructure:"ssh_port"`
+	ViPort   int    `mapstructure:"vi_port"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 	VMName   string `mapstructure:"vm_name"`
@@ -64,8 +65,12 @@ func (p *OVFtoolPostProcessor) Configure(raws ...interface{}) error {
 		p.cfg.OutputDir = "output/packer_{{ .BuildName }}_{{ .Provider }}_ovftool"
 	}
 
-	if p.cfg.Port == 0 {
-		p.cfg.Port = 22
+	if p.cfg.SshPort == 0 {
+		p.cfg.SshPort = 22
+	}
+
+	if p.cfg.ViPort == 0 {
+		p.cfg.ViPort = 22
 	}
 
 	if p.cfg.Username == "" {
@@ -154,7 +159,7 @@ func (p *OVFtoolPostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifac
 	ui.Say( "Exporting VM...")
 
 	var stdout, stderr bytes.Buffer
-	source := fmt.Sprintf( "vi://%s:%s@%s/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.VMName)
+	source := fmt.Sprintf( "vi://%s:%s@%s:%s/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.ViPort, p.cfg.VMName)
 
 	cmd := exec.Command( p.cfg.OVFtoolPath, source, p.cfg.OutputDir)
 	cmd.Stdout = &stdout

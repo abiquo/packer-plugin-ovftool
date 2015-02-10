@@ -24,7 +24,7 @@ func (p *OVFtoolPostProcessor) Unregister() error {
 }
 
 func (p *OVFtoolPostProcessor) connect() error {
-	address := fmt.Sprintf("%s:%d", p.cfg.Host, p.cfg.Port)
+	address := fmt.Sprintf("%s:%d", p.cfg.Host, p.cfg.SshPort)
 
 	auth := []gossh.AuthMethod{
 		gossh.Password(p.cfg.Password),
