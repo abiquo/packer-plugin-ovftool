@@ -161,7 +161,7 @@ func (p *OVFtoolPostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifac
 	var stdout, stderr bytes.Buffer
 	source := fmt.Sprintf( "vi://%s:%s@%s:%s/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.ViPort, p.cfg.VMName)
 
-	cmd := exec.Command( p.cfg.OVFtoolPath, source, p.cfg.OutputDir)
+	cmd := exec.Command( p.cfg.OVFtoolPath, "--noSSLVerify", source, p.cfg.OutputDir)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err = cmd.Run()
