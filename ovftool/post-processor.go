@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/mitchellh/packer/common"
+	"github.com/mitchellh/packer/helper/config"
 	"github.com/mitchellh/packer/packer"
+	"github.com/mitchellh/packer/template/interpolate"
 	//vmwiso "github.com/mitchellh/packer/builder/vmware/iso"
 )
 
@@ -27,7 +29,7 @@ type Config struct {
 	Password string `mapstructure:"password"`
 	VMName   string `mapstructure:"vm_name"`
 
-	tpl *packer.ConfigTemplate
+	ctx interpolate.Context
 }
 
 type OVFtoolPostProcessor struct {
@@ -38,24 +40,16 @@ type OVFtoolPostProcessor struct {
 	vmxPath string
 }
 
-type OutputPathTemplate struct {
-	ArtifactId string
-	BuildName  string
-	Provider   string
-}
-
 func (p *OVFtoolPostProcessor) Configure(raws ...interface{}) error {
-	_, err := common.DecodeConfig(&p.cfg, raws...)
+	err := config.Decode(&p.cfg, &config.DecodeOpts{
+		Interpolate: true,
+		InterpolateFilter: &interpolate.RenderFilter{
+			Exclude: []string{},
+		},
+	}, raws...)
 	if err != nil {
 		return err
 	}
-
-	p.cfg.tpl, err = packer.NewConfigTemplate()
-	if err != nil {
-		return err
-	}
-
-	p.cfg.tpl.UserVars = p.cfg.PackerUserVars
 
 	if p.cfg.OVFtoolPath == "" {
 		p.cfg.OVFtoolPath = "ovftool"
@@ -76,44 +70,6 @@ func (p *OVFtoolPostProcessor) Configure(raws ...interface{}) error {
 	if p.cfg.Username == "" {
 		p.cfg.Username = "root"
 	}
-
-	// Accumulate any errors
-	errs := new(packer.MultiError)
-
-	templates := map[string]*string {
-		"ovftool_path": &p.cfg.OVFtoolPath,
-		"output_dir": &p.cfg.OutputDir,
-		"host": &p.cfg.Host,
-//		"port": &p.cfg.Port,
-		"username": &p.cfg.Username,
-		"vm_name": &p.cfg.VMName,
-		"password": &p.cfg.Password,
-	}
-
-	for key, ptr := range templates {
-		*ptr, err = p.cfg.tpl.Process(*ptr, nil)
-		if err != nil {
-			errs = packer.MultiErrorAppend(
-				errs, fmt.Errorf("Error processing %s: %s", key, err))
-		}
-	}
-
-	if len(errs.Errors) > 0 {
-		return errs
-	}
-
-	if p.cfg.Host == "" {
-		return fmt.Errorf("ovftool post processor: host parameter is required")
-	}
-
-	if p.cfg.Password == "" {
-		return fmt.Errorf("ovftool post processor: password parameter is required")
-	}
-
-	if p.cfg.VMName == "" {
-		return fmt.Errorf("ovftool post processor: vm_name parameter is required")
-	}
-
 
 	return nil
 }

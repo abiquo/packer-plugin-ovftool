@@ -2,7 +2,7 @@ package ovftool
 
 import (
 	"bytes"
-	gossh "code.google.com/p/go.crypto/ssh"
+	gossh "golang.org/x/crypto/ssh"
 	"fmt"
 	"github.com/mitchellh/packer/communicator/ssh"
 	"github.com/mitchellh/packer/packer"
@@ -39,7 +39,6 @@ func (p *OVFtoolPostProcessor) connect() error {
 			User: p.cfg.Username,
 			Auth: auth,
 		},
-		NoPty: true,
 	}
 
 	comm, err := ssh.New(address, sshConfig)
