@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/mitchellh/packer/packer/plugin"
-	"github.com/0xBF/packer-post-processor-ovftool/ovftool"
+	ovftool "github.com/chirauki/packer-post-processor-ovftool/ovftool"
+	"github.com/hashicorp/packer/packer/plugin"
 )
 
 func main() {
@@ -10,6 +10,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	server.RegisterPostProcessor(new(ovftool.OVFtoolPostProcessor))
+	server.RegisterPostProcessor(new(ovftool.PostProcessor))
 	server.Serve()
 }

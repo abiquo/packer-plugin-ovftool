@@ -1,59 +1,76 @@
-Packer shell post-processor
-=============================
+# Packer OVFtool post processor
 
-Run shell scripts for post-process images
+Just another OVF tool post processor.
 
-Usage
------
+## Requirements
+
+- VMware's [OVF Tool](https://www.vmware.com/support/developer/ovf/).
+- OpenSSL command.
+
+## Usage
+
 Add the post-processor to your packer template:
 
+```
     {
-        "post-processors": [
-          {
-            "type": "ovftool",
-            "host": "esxi01.local",
-            "password": "top secret",
-            "vm_name": "test"
-          }
-        ]
-    }
+      "type": "ovftool",
+      "target_format": "ova",
+      "appliance_name": "{{user `vm_name`}}",
+      "output_dir": "{{user `output_dir`}}",
+      "keep_ovf": "{{user `keep_ovf`}}"
+    },
+```
 
 Available configuration options:
 
-  * ovftool_path
-    Path to ovftool binary.
+| Key                   | Desc  | Default  |
+|-----------------------|---|---|
+| `ovftool_path`        | Path to the `ovftool` binary if it cannot be found in the path. | `ovftool` |
+| `output_dir`          | The directory where to save the resulting appliance/s. | `output/packer_{{ .BuildName }}_{{ .Provider }}_ovftool` |
+| `keep_input_artifact` | Wether or not to keep the input artifact | false |
+| `target_format`       | Either `ovf` or `ova`. Use `keep_ovf` and `ova` if you want both OVF and OVA | `ovf` |
+| `keep_ovf`            | If `target_format` is OVA the initial OVF export will be deleted unless this param is true | false |
+| `appliance_name`      | The name to give to the resulting appliance |  |
 
-  * output_dir
-    where to store OVF template files.
+## Installation
 
-  * host
-    Address of ESXi server. Should be accessable by ssh and by vi://
+You can grab pre-built binaries from:
 
-  * port
-    Port for SSH access.
+https://github.com/chirauki/packer-post-processor-ovftool/releases/latest
 
-  * username
-    Username for login by ssh and by vi://
+And add the post-processor to ~/.packerconfig:
 
-  * pasword
-    Password for login by ssh and by vi://
+```
+{
+  "post-processors": {
+    "ovftool": "packer-post-processor-ovftool"
+  }
+}
+```
 
-  * vm_name
-    VM name. Template file names relate from this option.
+Or if you want to build it yourself, run:
 
+```
+$ go get github.com/chirauki/packer-post-processor-ovftool
+$ go install github.com/chirauki/packer-post-processor-ovftool
+```
 
-Installation
-------------
-Run:
+And add the post-processor to ~/.packerconfig.
 
-    $ go get github.com/0xBF/packer-post-processor-ovftool
-    $ go install github.com/0xBF/packer-post-processor-ovftool
+# License and Authors
 
-Add the post-processor to ~/.packerconfig:
+* Author:: Marc Cirauqui (marc.cirauqui@abiquo.com)
 
-    {
-      "post-processors": {
-        "ovftool": "packer-post-processor-ovftool"
-      }
-    }
+Copyright:: 2014, Abiquo
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

@@ -5,18 +5,18 @@ import (
 	"os"
 )
 
-// Artifact is the result of running the VMware builder, namely a set
-// of files associated with the resulting machine.
+const BuilderId = "packer.post-processor.ovftool"
+
 type Artifact struct {
 	dir string
 }
 
 func (a *Artifact) BuilderId() string {
-	return "x0A.ovftool"
+	return BuilderId
 }
 
 func (a *Artifact) Files() []string {
-	return []string { a.dir }
+	return []string{a.dir}
 }
 
 func (*Artifact) Id() string {
@@ -32,5 +32,5 @@ func (a *Artifact) State(name string) interface{} {
 }
 
 func (a *Artifact) Destroy() error {
-	return os.RemoveAll( a.dir)
+	return os.RemoveAll(a.dir)
 }
