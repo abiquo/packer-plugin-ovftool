@@ -92,6 +92,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	log.Printf("Source is: %s", source)
 	log.Printf("Target is: %s", dest)
 
+	ui.Say(fmt.Sprintf("Creating intial OVF export... %s", dest))
 	// MAKE sure dest path exists or OVFTool will
 	// do funky things.
 	os.Mkdir(path.Dir(dest), os.ModePerm)
@@ -146,15 +147,18 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	lines := strings.Split(string(xmlFile), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, "<File ovf:href") {
+			ui.Say("Adding icon file reference.")
 			xmlLines = append(xmlLines, line)
 			if iconFileRef != "" {
 				xmlLines = append(xmlLines, iconFileRef)
 			}
 		} else if strings.Contains(line, "VirtualSystem ovf:id=\"vm\"") {
+			ui.Say(fmt.Sprintf("Changing VirtualSystem ID to %s", p.config.ApplianceName))
 			sline := strings.Replace(line, "VirtualSystem id=\"vm\"", "VirtualSystem id=\""+p.config.ApplianceName+"\"", -1)
 			log.Printf("VS ID changed: %s", sline)
 			xmlLines = append(xmlLines, sline)
 		} else if strings.Contains(line, "</OperatingSystemSection>") {
+			ui.Say("Adding ProductSection.")
 			xmlLines = append(xmlLines, line)
 			if productXml != "" {
 				xmlLines = append(xmlLines, productXml)
@@ -211,6 +215,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		// Create OVA from resulting OVF
 		source = dest
 		dest := path.Clean(p.config.OutputDir + Separator + p.config.ApplianceName + ".ova")
+		ui.Say(fmt.Sprintf("Converting to OVA appliance %s", dest))
 
 		log.Printf("OVA Source is: %s", source)
 		log.Printf("OVA Target is: %s", dest)
@@ -227,6 +232,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		log.Printf("OVA OVFTOOL: %s", out)
 
 		if !p.config.KeepOvf {
+			ui.Say("Removing source OVF as instructed.")
 			os.RemoveAll(path.Dir(source))
 		}
 	}
