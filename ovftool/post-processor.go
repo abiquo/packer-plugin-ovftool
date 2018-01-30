@@ -89,10 +89,9 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 
 	source := path.Clean(vmxPath)
 	dest := path.Clean(p.config.OutputDir + Separator + p.config.ApplianceName + Separator + p.config.ApplianceName + ".ovf")
-	log.Printf("Source is: %s", source)
-	log.Printf("Target is: %s", dest)
-
 	ui.Say(fmt.Sprintf("Creating intial OVF export... %s", dest))
+	ui.Message(fmt.Sprintf("%s ==> %s", source, dest))
+
 	// MAKE sure dest path exists or OVFTool will
 	// do funky things.
 	os.Mkdir(path.Dir(dest), os.ModePerm)
@@ -108,7 +107,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	log.Printf("OVFTOOL: %s", out)
 
 	// Modify ID to name in VirtualSystem ID
-	log.Printf("Setting the VM name in VirtualSystem ID.")
+	ui.Message("Setting the VM name in VirtualSystem ID.")
 	var xmlLines []string
 	xmlFile, err := ioutil.ReadFile(dest)
 	if err != nil {
@@ -180,7 +179,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	writer.Sync()
 
 	// Now rebuild the manifest
-	log.Printf("Regenerating OVF manifest file.")
+	ui.Message("Regenerating OVF manifest file.")
 	cmdname = "openssl"
 	cmdargs = []string{"sha1"}
 	ovfFilesPath := path.Clean(p.config.OutputDir + Separator + p.config.ApplianceName)
@@ -215,7 +214,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		// Create OVA from resulting OVF
 		source = dest
 		dest := path.Clean(p.config.OutputDir + Separator + p.config.ApplianceName + ".ova")
-		ui.Say(fmt.Sprintf("Converting to OVA appliance %s", dest))
+		ui.Message(fmt.Sprintf("Converting to OVA appliance %s", dest))
 
 		log.Printf("OVA Source is: %s", source)
 		log.Printf("OVA Target is: %s", dest)
@@ -232,7 +231,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		log.Printf("OVA OVFTOOL: %s", out)
 
 		if !p.config.KeepOvf {
-			ui.Say("Removing source OVF as instructed.")
+			ui.Message("Removing source OVF as instructed.")
 			os.RemoveAll(path.Dir(source))
 		}
 	}
