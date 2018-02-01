@@ -116,17 +116,11 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	}
 
 	productXml := ""
-	iconFileRef := ""
 	if _, info := p.config.PackerUserVars["info"]; info {
 		if _, prod := p.config.PackerUserVars["product"]; prod {
 			productXml = fmt.Sprintf("<ProductSection><Info>%s</Info><Product>%s</Product>",
 				p.config.PackerUserVars["info"],
 				p.config.PackerUserVars["product"])
-			if _, ic := p.config.PackerUserVars["icon"]; ic {
-				iconFileRef = fmt.Sprintf("<File ovf:href=\"%s\" ovf:id=\"icon\"/>", p.config.PackerUserVars["icon"])
-				productXml = productXml +
-					"<Icon ovf:fileRef=\"icon\" ovf:mimeType=\"image/jpeg\" ovf:width=\"32\" ovf:height=\"32\"/>"
-			}
 			if _, user := p.config.PackerUserVars["ssh_username"]; user {
 				productXml = productXml +
 					fmt.Sprintf("<Property ovf:key=\"user\" ovf:type=\"string\" ovf:value=\"%s\">",
@@ -145,13 +139,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 
 	lines := strings.Split(string(xmlFile), "\n")
 	for _, line := range lines {
-		if strings.Contains(line, "<File ovf:href") {
-			ui.Say("Adding icon file reference.")
-			xmlLines = append(xmlLines, line)
-			if iconFileRef != "" {
-				xmlLines = append(xmlLines, iconFileRef)
-			}
-		} else if strings.Contains(line, "VirtualSystem ovf:id=\"vm\"") {
+		if strings.Contains(line, "VirtualSystem ovf:id=\"vm\"") {
 			ui.Say(fmt.Sprintf("Changing VirtualSystem ID to %s", p.config.ApplianceName))
 			sline := strings.Replace(line, "VirtualSystem id=\"vm\"", "VirtualSystem id=\""+p.config.ApplianceName+"\"", -1)
 			log.Printf("VS ID changed: %s", sline)
