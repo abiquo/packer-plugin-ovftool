@@ -115,28 +115,6 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		return nil, keep, err
 	}
 
-	productXml := ""
-	if _, info := p.config.PackerUserVars["info"]; info {
-		if _, prod := p.config.PackerUserVars["product"]; prod {
-			productXml = fmt.Sprintf("<ProductSection><Info>%s</Info><Product>%s</Product>",
-				p.config.PackerUserVars["info"],
-				p.config.PackerUserVars["product"])
-			if _, user := p.config.PackerUserVars["ssh_username"]; user {
-				productXml = productXml +
-					fmt.Sprintf("<Property ovf:key=\"user\" ovf:type=\"string\" ovf:value=\"%s\">",
-						p.config.PackerUserVars["ssh_username"]) +
-					"<Description>Default login username</Description></Property>"
-			}
-			if _, pass := p.config.PackerUserVars["ssh_password"]; pass {
-				productXml = productXml +
-					fmt.Sprintf("<Property ovf:key=\"password\" ovf:type=\"string\" ovf:value=\"%s\">",
-						p.config.PackerUserVars["ssh_password"]) +
-					"<Description>Default login password</Description></Property>"
-			}
-			productXml = productXml + "</ProductSection>"
-		}
-	}
-
 	lines := strings.Split(string(xmlFile), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, "VirtualSystem ovf:id=\"vm\"") {
@@ -144,12 +122,6 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 			sline := strings.Replace(line, "VirtualSystem id=\"vm\"", "VirtualSystem id=\""+p.config.ApplianceName+"\"", -1)
 			log.Printf("VS ID changed: %s", sline)
 			xmlLines = append(xmlLines, sline)
-		} else if strings.Contains(line, "</OperatingSystemSection>") {
-			ui.Say("Adding ProductSection.")
-			xmlLines = append(xmlLines, line)
-			if productXml != "" {
-				xmlLines = append(xmlLines, productXml)
-			}
 		} else {
 			xmlLines = append(xmlLines, line)
 		}
