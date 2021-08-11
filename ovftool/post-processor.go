@@ -1,8 +1,12 @@
 package ovftool
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/hcl/v2/hcldec"
+	"github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,10 +14,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/hashicorp/packer/common"
-	"github.com/hashicorp/packer/helper/config"
-	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/template/interpolate"
+	//"github.com/hashicorp/packer/common"
+	//"github.com/hashicorp/packer/helper/config"
+	//"github.com/hashicorp/packer/packer"
 )
 
 const (
@@ -24,53 +27,17 @@ type PostProcessor struct {
 	config Config
 }
 
-type Config struct {
-	common.PackerConfig `mapstructure:",squash"`
+func (p *PostProcessor) ConfigSpec() hcldec.ObjectSpec { return p.config.FlatMapstructure().HCL2Spec() }
 
-	OVFtoolPath string `mapstructure:"ovftool_path"`
-	OutputDir   string `mapstructure:"output_dir"`
-	KeepSource  bool   `mapstructure:"keep_input_artifact"`
+//func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, error) {
+//}
 
-	TargetFormat  string `mapstructure:"target_format"`
-	KeepOvf       bool   `mapstructure:"keep_ovf"`
-	ApplianceName string `mapstructure:"appliance_name"`
-
-	ctx interpolate.Context
-}
-
-func (p *PostProcessor) Configure(raws ...interface{}) error {
-	err := config.Decode(&p.config, &config.DecodeOpts{
-		Interpolate: true,
-	}, raws...)
-	if err != nil {
-		return err
-	}
-
-	if p.config.ApplianceName == "" {
-		errorMsg := "Appliance name is mandatory!"
-		return errors.New(errorMsg)
-	}
-
-	if p.config.OVFtoolPath == "" {
-		p.config.OVFtoolPath = "ovftool"
-	}
-
-	if p.config.OutputDir == "" {
-		p.config.OutputDir = "output" + Separator + "packer_{{ .BuildName }}_{{ .Provider }}_ovftool"
-	}
-
-	if p.config.TargetFormat == "" {
-		p.config.TargetFormat = "ovf"
-	}
-
-	return nil
-}
-
-func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, error) {
-	keep := p.config.KeepSource
+func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact packer.Artifact) (a packer.Artifact, keep bool, forceOverride bool, err error) {
+	keep = p.config.KeepSource
 
 	if artifact.BuilderId() != "mitchellh.vmware" {
-		return nil, keep, fmt.Errorf("ovftool post-processor can only be used on VMware builds: %s", artifact.BuilderId())
+		return nil, keep, false, fmt.Errorf("ovftool post-processor can only be used on VMware builds: %s", artifact.BuilderId())
+
 	}
 
 	log.Println("Looking for the VMX file...")
@@ -82,7 +49,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	}
 
 	if vmxPath == "" {
-		return nil, keep, fmt.Errorf("No .vmx file in artifact")
+		return nil, keep, false, fmt.Errorf("No .vmx file in artifact")
 	}
 	log.Printf("VMX file is at %s", vmxPath)
 	log.Printf("Running OVFtool...")
@@ -102,7 +69,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	if err != nil {
 		log.Printf("Error executing OVFTool! %s", err)
 		log.Printf("OVFTool: %s", out)
-		return nil, keep, err
+		return nil, keep, false, err
 	}
 	log.Printf("OVFTOOL: %s", out)
 
@@ -112,7 +79,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	xmlFile, err := ioutil.ReadFile(dest)
 	if err != nil {
 		log.Println("Error opening OVF file:", err)
-		return nil, keep, err
+		return nil, keep, false, err
 	}
 
 	lines := strings.Split(string(xmlFile), "\n")
@@ -130,7 +97,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 
 	writer, err := os.Create(dest)
 	if err != nil {
-		return nil, keep, err
+		return nil, keep, false, err
 	}
 	defer writer.Close()
 	for _, line := range xmlLines {
@@ -164,7 +131,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 
 	writer, err = os.Create(ovfFilesPath + Separator + mfFile)
 	if err != nil {
-		return nil, keep, err
+		return nil, keep, false, err
 	}
 	defer writer.Close()
 	writer.Write(output)
@@ -186,7 +153,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		if err != nil {
 			log.Printf("Error executing OVA OVFTool! %s", err)
 			log.Printf("OVA OVFTool: %s", out)
-			return nil, keep, err
+			return nil, keep, false, err
 		}
 		log.Printf("OVA OVFTOOL: %s", out)
 
@@ -196,5 +163,34 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		}
 	}
 
-	return &Artifact{dir: p.config.OutputDir + Separator + p.config.ApplianceName}, keep, nil
+	return &Artifact{dir: p.config.OutputDir + Separator + p.config.ApplianceName}, keep, false, nil
 }
+
+func (p *PostProcessor) Configure(raws ...interface{}) error {
+	err := config.Decode(&p.config, &config.DecodeOpts{
+		Interpolate: true,
+	}, raws...)
+	if err != nil {
+		return err
+	}
+
+	if p.config.ApplianceName == "" {
+		errorMsg := "Appliance name is mandatory!"
+		return errors.New(errorMsg)
+	}
+
+	if p.config.OVFtoolPath == "" {
+		p.config.OVFtoolPath = "ovftool"
+	}
+
+	if p.config.OutputDir == "" {
+		p.config.OutputDir = "output" + Separator + "packer_{{ .BuildName }}_{{ .Provider }}_ovftool"
+	}
+
+	if p.config.TargetFormat == "" {
+		p.config.TargetFormat = "ovf"
+	}
+
+	return nil
+}
+
